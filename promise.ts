@@ -1,3 +1,5 @@
+import { rejects } from "assert";
+
 // 手写promise实现
 var promisesAplusTests = require("promises-aplus-tests");
 type STATUS = 'pending' | 'fulfilled' | 'rejected'
@@ -40,6 +42,28 @@ class MyPromise {
         promisees[i].then(y => {
           processData(i, y)
         }, reject)
+      }
+    })
+  }
+
+  static allSettled(promisees: MyPromise[]) {
+    return new MyPromise((resolve, reject) => {
+      // arr为最终返回值
+      const arr = []
+      let i = 0
+      function processData(index, status, value) {
+        arr[index] = {status, value}
+        if(++i === promisees.length) {
+          // 等全部取到值后一起返回
+          resolve(arr)
+        }
+      }
+      for(let i = 0; i < promisees.length; i++) {
+        promisees[i].then(res => {
+          processData(i, 'fulfilled', res)
+        }, err => {
+          processData(i, 'rejected', err)
+        })
       }
     })
   }
@@ -249,15 +273,42 @@ class MyPromise {
   }
 }
 
-promisesAplusTests(MyPromise, function (err) {
-  // All done; output is in the console. Or check `err` for number of failures.
-  console.log(err)
-});
+// promisesAplusTests(MyPromise, function (err) {
+//   // All done; output is in the console. Or check `err` for number of failures.
+//   console.log(err)
+// });
 
 // let p = new MyPromise((resolve, reject) => {
 //   console.log(22)
 //   resolve(11)
 // })
 // console.log(p)
+
+let p1 = new MyPromise((resolve, reject) => {
+  setTimeout(() => {
+    resolve(1)
+  }, 1000)
+})
+let p2 = new MyPromise((resolve, reject) => {
+  setTimeout(() => {
+    reject(new Error('2'))
+  }, 2000)
+})
+console.log(Date.now())
+MyPromise.allSettled([p1, p2]).then(res => {
+  console.log(Date.now())
+  console.log(res)
+}, err => {
+  console.log(Date.now())
+  console.log(err)
+})
+
+MyPromise.all([p1, p2]).then(res => {
+  console.log(Date.now())
+  console.log(res)
+}, err => {
+  console.log(Date.now())
+  console.log(err)
+})
 
 export default MyPromise
